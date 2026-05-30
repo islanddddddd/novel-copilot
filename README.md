@@ -1,10 +1,7 @@
-# 伴作 / Novel Copilot
+
+# 伴作
 
 > AI 辅助小说写作工具。辅助，而非替代。
-
-[English](#novel-copilot) | 中文版
-
----
 
 ## 简介
 
@@ -26,11 +23,11 @@
 
 ### 三种 AI 模式
 
-| 模式       | Temperature | Max Tokens | 推理 | 适用场景                   |
-| ---------- | ----------- | ---------- | ---- | -------------------------- |
-| **高质量** | 0.3         | 可调       | 开启 | 关键段落深度润色、重要扩写 |
-| **均衡**   | 0.7         | 可调       | 关闭 | 日常写作，平衡质量与速度   |
-| **快速**   | 0.9         | 可调       | 关闭 | 草拟、快速生成             |
+| 模式       | Temperature | Max Tokens    | 推理 | 适用场景                   |
+| ---------- | ----------- | ------------- | ---- | -------------------------- |
+| **高质量** | 0.3         | 可调 / 无上限 | 开启 | 关键段落深度润色、重要扩写 |
+| **均衡**   | 0.7         | 可调 / 无上限 | 关闭 | 日常写作，平衡质量与速度   |
+| **快速**   | 0.9         | 可调 / 无上限 | 关闭 | 草拟、快速生成             |
 
 每个模式可独立绑定 API 配置、调节参数。支持 **Max Tokens 无上限** 选项。
 
@@ -60,9 +57,11 @@
 
 ## 快速开始
 
+### 本地开发
+
 ```bash
 # 1. 克隆仓库
-git clone <repo-url>
+git clone <仓库地址>
 cd novel-copilot
 
 # 2. 安装依赖
@@ -76,11 +75,43 @@ npm run dev
 
 ### 配置 AI
 
-1. 点击右上下 **设置** → **AI 配置**
-2. 添加你的 API Key（兼容 OpenAI 接口协议）
+1. 点击右上角 **设置** → **AI 配置**
+2. 添加你的 API Key（支持 OpenAI / DeepSeek / 硅基流动 / 自定义）
 3. 点击 **测试连接**，获取可用模型列表
 4. 选择模型，保存配置
 5. 在 **AI 模式设置** 中为不同质量模式分配配置和参数
+
+---
+
+## 部署到 GitHub Pages
+
+项目已内置 GitHub Actions 自动部署配置，只需以下步骤：
+
+### 1. 在 GitHub 创建仓库
+
+- 访问 https://github.com/new
+- 仓库名填 `novel-copilot`（或你喜欢的名字）
+- 选择 **Public**（GitHub Pages 免费部署需要公开仓库）
+- 点击 **Create repository**
+
+### 2. 推送代码到仓库
+
+### 3. 启用 GitHub Pages
+
+1. 打开仓库页面 → 点击 **Settings**
+2. 左侧菜单点击 **Pages**
+3. **Build and deployment** 下面，**Source** 选择 **GitHub Actions**
+4. 完成！等待 3-5 分钟自动部署
+
+### 4. 访问站点
+
+部署完成后，访问地址为：
+
+```
+https://你的用户名.github.io/novel-copilot/
+```
+
+> 以后每次 push 代码到 main 分支，GitHub Actions 会自动重新构建并部署，无需手动操作。
 
 ---
 
@@ -122,9 +153,11 @@ novel-copilot/
 │   ├── lib/                 # 工具函数与类型定义
 │   └── index.css            # 全局样式与主题变量
 ├── public/                  # 静态资源
+├── .github/workflows/       # GitHub Actions 自动部署配置
 ├── index.html
 ├── package.json
-└── vite.config.ts
+├── vite.config.ts
+└── README.md
 ```
 
 ---
@@ -136,155 +169,6 @@ npm run build
 ```
 
 构建产物输出到 `dist/` 目录，可直接部署为静态站点。
-
----
-
-## License
-
-MIT
-
----
-
----
-
-# Novel Copilot
-
-> An AI-assisted novel writing tool. Assists, never replaces.
-
-中文版 | [English](#novel-copilot)
-
----
-
-## Introduction
-
-**Novel Copilot** (伴作) is an AI-assisted writing tool for Chinese novel authors. The core philosophy is **"assist, never replace"** — AI handles repetitive tasks like polishing, expanding, and reviewing, while the author always remains in full creative control.
-
-It features a **dual-pane real-time collaborative editor**: the left pane is your **original input** (your writing), and the right pane is the **AI output** (AI-processed results). Processing happens at the paragraph level, down to each individual paragraph.
-
----
-
-## Core Features
-
-### Dual-Pane Real-Time Collaborative Editor
-
-| Left — Original Input                                      | Right — AI Output                              |
-| ---------------------------------------------------------- | ---------------------------------------------- |
-| Distraction-free writing                                   | Paragraph-level AI processing                  |
-| Enter to create new paragraph, Backspace (empty) to delete | Hover to reveal AI action floating bar         |
-| Drag / Shift range / Ctrl multi-select                     | Sync button: one-click reset to original input |
-
-### Three AI Modes
-
-| Mode             | Temperature | Max Tokens | Reasoning | Best For                             |
-| ---------------- | ----------- | ---------- | --------- | ------------------------------------ |
-| **High Quality** | 0.3         | Adjustable | On        | Critical paragraphs, deep polishing  |
-| **Balanced**     | 0.7         | Adjustable | Off       | Daily writing, quality-speed balance |
-| **Fast**         | 0.9         | Adjustable | Off       | Drafting, quick generation           |
-
-Each mode can bind to a different API config and parameter set. Supports **unlimited Max Tokens** option.
-
-### Prompt Template System
-
-- Built-in templates: Polish, Expand, Review
-- Custom templates with AI mode assignment
-- Template override: editing built-in templates updates them directly, no duplicates
-
-### Writing Style Management
-
-- Paste reference text, AI analyzes its stylistic features
-- Save as a style profile, auto-injected during Polish/Expand
-
-### Novel Management
-
-- Multi-novel support with chapter organization
-- Character profiles and world-building settings
-- Outline editor
-
-### Data Security
-
-- **All data stored locally in your browser** (localStorage + IndexedDB)
-- API Key stored locally only, never uploaded to any server
-
----
-
-## Quick Start
-
-```bash
-# 1. Clone the repo
-git clone <repo-url>
-cd novel-copilot
-
-# 2. Install dependencies
-npm install
-
-# 3. Start dev server
-npm run dev
-
-# 4. Open browser at http://localhost:5173
-```
-
-### Configure AI
-
-1. Click **Settings** at bottom-left → **AI Config**
-2. Add your API Key (supports OpenAI / DeepSeek / SiliconFlow / Custom)
-3. Click **Test Connection** to fetch available models
-4. Select a model and save the config
-5. In **AI Mode Settings**, assign configs and parameters to each quality mode
-
----
-
-## UI & Shortcuts
-
-| Shortcut                    | Function                                                       |
-| --------------------------- | -------------------------------------------------------------- |
-| Enter                       | Create new paragraph                                           |
-| Backspace (empty paragraph) | Delete paragraph                                               |
-| Ctrl/Cmd + Click            | Multi-select paragraphs                                        |
-| Shift + Click               | Range select                                                   |
-| Mouse drag                  | Box select paragraphs                                          |
-| Hover AI output paragraph   | Show AI action floating bar (Polish/Expand/Review/Sync/Custom) |
-
----
-
-## Tech Stack
-
-- **React 19** + **TypeScript** + **Vite**
-- **Tailwind CSS 4** — Atomic styling
-- **Zustand + persist** — State management & local persistence
-- **Framer Motion** — Animations
-- **OpenAI-compatible API** — Direct LLM API calls
-
----
-
-## Project Structure
-
-```
-novel-copilot/
-├── src/
-│   ├── components/
-│   │   ├── editor/          # Editor components (Paragraph, EditorPane, AIFloatingBar)
-│   │   ├── layout/          # Layout components (TopBar, LeftPanel, SplitEditor, StatusBar)
-│   │   ├── panels/          # Left panels (Chapter, Outline, Character, Setting)
-│   │   ├── common/          # Common modals (SettingsModal, AIConfigModal)
-│   │   └── novel/           # Novel creation
-│   ├── store/               # Zustand state management
-│   ├── lib/                 # Utilities & type definitions
-│   └── index.css            # Global styles & theme variables
-├── public/                  # Static assets
-├── index.html
-├── package.json
-└── vite.config.ts
-```
-
----
-
-## Build
-
-```bash
-npm run build
-```
-
-Output goes to `dist/`, ready for static site deployment.
 
 ---
 
