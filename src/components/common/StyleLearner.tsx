@@ -33,7 +33,7 @@ export default function StyleLearner({ isOpen, onClose }: StyleLearnerProps) {
       const newStyle: WritingStyle = {
         id: `style-${Date.now()}`,
         name: styleName.trim(),
-        sourceText: sampleText.slice(0, 500),
+        sourceText: result.sourceText || sampleText.slice(0, 3000),
         description: result.description || '自定义文风',
         promptFragment: result.promptFragment || '',
         createdAt: Date.now(),

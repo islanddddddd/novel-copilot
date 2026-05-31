@@ -17,10 +17,47 @@ function supportsReasoning(config: AIConfig): boolean {
 }
 
 const DEFAULT_TEMPLATES: Record<string, string> = {
-  polish: `你是一位专业的小说编辑。请对以下段落进行润色，保持原文的意思和情节，但提升文笔质量。\n\n{{STYLE}}\n\n原文：\n{{TEXT}}\n\n请直接返回润色后的文本，不要添加任何解释或标注。`,
-  expand: `你是一位专业的小说作者。请对以下段落进行扩写，在保持原有情节和风格的基础上，增加更多细节描写、环境渲染、心理活动或对话，使内容更加丰富饱满。\n\n{{STYLE}}\n\n原文：\n{{TEXT}}\n\n请直接返回扩写后的文本，不要添加任何解释或标注。`,
-  review: `你是一位专业的小说审稿人。请审查以下段落，检查：\n1. 是否与前文大纲和设定一致\n2. 是否存在逻辑矛盾或设定冲突\n3. 伏笔是否得到呼应\n4. 文笔质量和改进建议\n\n大纲：\n{{OUTLINE}}\n\n设定：\n{{SETTINGS}}\n\n前文：\n{{PREVIOUS}}\n\n当前段落：\n{{TEXT}}\n\n请简要返回审查结果。`,
-  custom: `{{CUSTOM_PROMPT}}\n\n原文：\n{{TEXT}}\n\n请直接返回处理后的文本，不要添加任何解释或标注。`,
+  polish: `你是一位专业的小说编辑。请对以下段落进行润色，保持原文的意思和情节，但提升文笔质量。
+
+{{STYLE}}
+
+原文：
+{{TEXT}}
+
+请直接返回润色后的文本，不要添加任何解释或标注。`,
+  expand: `你是一位专业的小说作者。请对以下段落进行扩写，在保持原有情节和风格的基础上，增加更多细节描写、环境渲染、心理活动或对话，使内容更加丰富饱满。
+
+{{STYLE}}
+
+原文：
+{{TEXT}}
+
+请直接返回扩写后的文本，不要添加任何解释或标注。`,
+  review: `你是一位专业的小说审稿人。请审查以下段落，检查：
+1. 是否与前文大纲和设定一致
+2. 是否存在逻辑矛盾或设定冲突
+3. 伏笔是否得到呼应
+4. 文笔质量和改进建议
+
+大纲：
+{{OUTLINE}}
+
+设定：
+{{SETTINGS}}
+
+前文：
+{{PREVIOUS}}
+
+当前段落：
+{{TEXT}}
+
+请简要返回审查结果。`,
+  custom: `{{CUSTOM_PROMPT}}
+
+原文：
+{{TEXT}}
+
+请直接返回处理后的文本，不要添加任何解释或标注。`,
 };
 
 export function getDefaultTemplate(operation: AIOperation): string {
@@ -45,12 +82,18 @@ export async function sendAIRequest(
 
     let prompt = promptTemplate || getDefaultTemplate(request.operation);
 
+    // Build style section with reference text if available
+    let styleSection = '';
+    if (style) {
+      styleSection = `文风要求：${style.promptFragment}`;
+      if (style.sourceText) {
+        styleSection += `\n\n参考文本（请模仿此风格）：\n${style.sourceText}`;
+      }
+    }
+
     // Replace placeholders
     prompt = prompt.replace('{{TEXT}}', request.text);
-    prompt = prompt.replace(
-      '{{STYLE}}',
-      style ? `文风要求：${style.promptFragment}` : ''
-    );
+    prompt = prompt.replace('{{STYLE}}', styleSection);
     prompt = prompt.replace('{{OUTLINE}}', request.context?.outline || '（暂无大纲）');
     prompt = prompt.replace(
       '{{SETTINGS}}',
@@ -120,15 +163,24 @@ export async function sendAIRequest(
 }
 
 export async function learnStyleFromText(text: string, config: AIConfig): Promise<Partial<WritingStyle>> {
-  const prompt = `请分析以下文本的写作风格，提取其特征。请用简洁的语言描述这种文风的特点，并总结为一段可用于指导AI写作的提示词片段。
+  const sampleText = text.slice(0, 3000);
+  const prompt = `请深入分析以下文本的写作风格，提取其核心特征。
 
 文本样本：
-${text.slice(0, 3000)}
+${sampleText}
+
+请从以下维度分析：
+1. 句式特点（长短句比例、句式结构）
+2. 用词风格（词汇选择、口语/书面语程度）
+3. 修辞手法（比喻、排比、拟人等）
+4. 节奏韵律（叙述节奏、停顿方式）
+5. 情感表达（直接/含蓄、强烈/温和）
+6. 视角特征（第一/第三人称、全知/限制视角）
 
 请以JSON格式返回：
 {
-  "description": "文风特点描述（50字以内）",
-  "promptFragment": "用于AI提示词的风格描述（100字以内）"
+  "description": "文风特点总结（50字以内）",
+  "promptFragment": "详细的风格指导（200字以内，用于指导AI模仿此风格写作）"
 }`;
 
   const response = await fetch(`${getBaseUrl(config)}/chat/completions`, {
@@ -140,11 +192,11 @@ ${text.slice(0, 3000)}
     body: JSON.stringify({
       model: config.model || 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: '你是一位文学分析专家，擅长分析写作风格。' },
+        { role: 'system', content: '你是一位文学分析专家，擅长分析写作风格。请用中文回答。' },
         { role: 'user', content: prompt },
       ],
       temperature: 0.5,
-      max_tokens: 500,
+      max_tokens: 800,
     }),
   });
 
@@ -154,15 +206,15 @@ ${text.slice(0, 3000)}
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content || '{}';
-  
+
   try {
-    // Try to parse JSON from the response
     const match = content.match(/\{[\s\S]*\}/);
     if (match) {
       const parsed = JSON.parse(match[0]);
       return {
         description: parsed.description || '自定义文风',
         promptFragment: parsed.promptFragment || '',
+        sourceText: sampleText,
       };
     }
   } catch {
@@ -171,6 +223,7 @@ ${text.slice(0, 3000)}
 
   return {
     description: '自定义文风',
-    promptFragment: content.slice(0, 200),
+    promptFragment: content.slice(0, 300),
+    sourceText: sampleText,
   };
 }
