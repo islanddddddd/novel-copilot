@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { BookOpen, Plus } from 'lucide-react';
 import TopBar from './components/layout/TopBar';
@@ -15,6 +15,7 @@ function App() {
   const { novels, currentNovelId, addNovel, addChapter, setCurrentChapter } = useNovelStore();
   const { showSettings, setShowSettings, settingsTab, togglePanel, theme } = useUIStore();
   const [showNovelCreator, setShowNovelCreator] = useState(false);
+  const demoCreatedRef = useRef(false);
 
   // Apply dark theme to html
   useEffect(() => {
@@ -37,9 +38,10 @@ function App() {
     return () => mql.removeEventListener('change', handler);
   }, []);
 
-  // Create demo novel
+  // Create demo novel (only once, even with StrictMode)
   useEffect(() => {
-    if (novels.length === 0) {
+    if (novels.length === 0 && !demoCreatedRef.current) {
+      demoCreatedRef.current = true;
       addNovel({
         id: 'demo-novel',
         title: '我的第一本小说',
