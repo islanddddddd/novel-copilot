@@ -15,6 +15,15 @@ export interface AIModeSetting {
   enableReasoning: boolean;
 }
 
+export interface AINotification {
+  id: string;
+  type: 'review' | 'info';
+  title: string;
+  content: string;
+  paragraphId?: string;
+  timestamp: number;
+}
+
 interface AIState {
   configs: SavedAIConfig[];
   currentConfigId: string | null;
@@ -24,6 +33,7 @@ interface AIState {
   isProcessing: boolean;
   currentOperation: AIOperation | null;
   errorMessages: string[];
+  notifications: AINotification[];
   history: AIProcessRecord[];
   // Actions
   addConfig: (config: SavedAIConfig) => void;
@@ -38,6 +48,8 @@ interface AIState {
   setDefaultMode: (mode: AIMode) => void;
   addError: (msg: string) => void;
   clearErrors: () => void;
+  addNotification: (notification: AINotification) => void;
+  clearNotifications: () => void;
   addHistory: (record: AIProcessRecord) => void;
   clearHistory: () => void;
   addToQueue: (item: AIQueueItem) => void;
@@ -62,6 +74,7 @@ export const useAIStore = create<AIState>()(
       isProcessing: false,
       currentOperation: null,
       errorMessages: [],
+      notifications: [],
       history: [],
 
       addConfig: (config) => {
@@ -115,6 +128,9 @@ export const useAIStore = create<AIState>()(
       addError: (msg) =>
         set((state) => ({ errorMessages: [...state.errorMessages.slice(-4), msg] })),
       clearErrors: () => set({ errorMessages: [] }),
+      addNotification: (notification) =>
+        set((state) => ({ notifications: [...state.notifications.slice(-9), notification] })),
+      clearNotifications: () => set({ notifications: [] }),
       addHistory: (record) =>
         set((state) => ({ history: [...state.history.slice(-9), record] })),
       clearHistory: () => set({ history: [] }),

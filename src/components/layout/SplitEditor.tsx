@@ -185,10 +185,23 @@ export default function SplitEditor() {
       );
 
       if (response.success) {
-        updateParagraph(currentChapterId, paragraphId, {
-          aiText: response.result,
-          aiStatus: 'completed',
-        });
+        // 审查结果不替换 AI 成品，而是显示在通知里
+        if (op.id === 'review') {
+          updateParagraph(currentChapterId, paragraphId, { aiStatus: 'idle' });
+          storeState.addNotification({
+            id: `notif-${Date.now()}`,
+            type: 'review',
+            title: `审查完成 - ${paragraph.userText.slice(0, 20)}...`,
+            content: response.result,
+            paragraphId,
+            timestamp: Date.now(),
+          });
+        } else {
+          updateParagraph(currentChapterId, paragraphId, {
+            aiText: response.result,
+            aiStatus: 'completed',
+          });
+        }
         storeState.addHistory({
           id: `rec-${Date.now()}`,
           paragraphId,

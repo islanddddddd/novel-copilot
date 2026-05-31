@@ -1,16 +1,16 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, Loader2, X, Sparkles, AlertCircle, History, CheckCircle2 } from 'lucide-react';
+import { Save, Loader2, X, Sparkles, AlertCircle, History, CheckCircle2, FileText } from 'lucide-react';
 import { useNovelStore } from '../../store/useNovelStore';
 import { useAIStore } from '../../store/useAIStore';
 
 export default function StatusBar() {
   const { novels, currentNovelId, currentChapterId } = useNovelStore();
-  const { errorMessages, clearErrors, history, clearHistory } = useAIStore();
+  const { errorMessages, clearErrors, history, clearHistory, notifications, clearNotifications } = useAIStore();
   const currentNovel = novels.find((n) => n.id === currentNovelId);
   const currentChapter = currentNovel?.chapters.find((c) => c.id === currentChapterId);
   const [showPanel, setShowPanel] = useState(false);
-  const [panelTab, setPanelTab] = useState<'progress' | 'history'>('progress');
+  const [panelTab, setPanelTab] = useState<'progress' | 'history' | 'notifications'>('progress');
 
   const stats = useMemo(() => {
     if (!currentChapter) return null;
@@ -44,6 +44,7 @@ export default function StatusBar() {
   const hasProcessing = stats.processingItems.length > 0;
   const hasCompleted = stats.completedCount > 0;
   const hasErrors = errorMessages.length > 0;
+  const hasNotifications = notifications.length > 0;
   const hasHistory = history.length > 0;
 
   const modeColor = (mode?: string) => {
@@ -99,6 +100,39 @@ export default function StatusBar() {
                   onClick={clearErrors}
                   className="p-0.5 rounded hover:bg-bg-secondary text-text-tertiary"
                   title="清除错误"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Review notifications */}
+          <AnimatePresence>
+            {hasNotifications && (
+              <motion.div
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="flex items-center gap-1.5"
+              >
+                <button
+                  onClick={() => { setPanelTab('notifications'); setShowPanel(true); }}
+                  className="flex items-center gap-1 text-accent hover:text-accent-hover cursor-pointer transition-colors"
+                  title="查看审查结果"
+                >
+                  <FileText className="w-3 h-3" />
+                  <span className="max-w-[150px] truncate">
+                    {notifications[notifications.length - 1].title}
+                  </span>
+                  {notifications.length > 1 && (
+                    <span className="text-[10px] opacity-70">+{notifications.length - 1}</span>
+                  )}
+                </button>
+                <button
+                  onClick={clearNotifications}
+                  className="p-0.5 rounded hover:bg-bg-secondary text-text-tertiary"
+                  title="清除通知"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -175,10 +209,22 @@ export default function StatusBar() {
                     历史记录
                     {history.length > 0 && <span className="text-[10px] px-1 py-0.5 rounded bg-bg-tertiary">{history.length}</span>}
                   </button>
+                  <button
+                    onClick={() => setPanelTab('notifications')}
+                    className={`text-sm font-medium transition-colors flex items-center gap-1 ${panelTab === 'notifications' ? 'text-accent' : 'text-text-tertiary hover:text-text-secondary'}`}
+                  >
+                    审查结果
+                    {notifications.length > 0 && <span className="text-[10px] px-1 py-0.5 rounded bg-bg-tertiary">{notifications.length}</span>}
+                  </button>
                 </div>
                 <div className="flex items-center gap-1">
                   {panelTab === 'history' && history.length > 0 && (
                     <button onClick={clearHistory} className="text-[10px] text-text-tertiary hover:text-error px-2 py-1 rounded hover:bg-bg-secondary transition-colors">
+                      清空
+                    </button>
+                  )}
+                  {panelTab === 'notifications' && notifications.length > 0 && (
+                    <button onClick={clearNotifications} className="text-[10px] text-text-tertiary hover:text-error px-2 py-1 rounded hover:bg-bg-secondary transition-colors">
                       清空
                     </button>
                   )}
@@ -211,7 +257,7 @@ export default function StatusBar() {
                       <span className="text-xs">暂无处理中的任务</span>
                     </div>
                   )
-                ) : (
+                ) : panelTab === 'history' ? (
                   history.length > 0 ? (
                     history.slice().reverse().map((rec) => (
                       <div key={rec.id} className="flex items-start gap-3 px-4 py-2 border-b border-border-light last:border-0">
@@ -235,6 +281,28 @@ export default function StatusBar() {
                     <div className="flex flex-col items-center justify-center py-8 text-text-tertiary">
                       <History className="w-6 h-6 mb-2 opacity-40" />
                       <span className="text-xs">暂无历史记录</span>
+                    </div>
+                  )
+                ) : (
+                  notifications.length > 0 ? (
+                    notifications.slice().reverse().map((notif) => (
+                      <div key={notif.id} className="px-4 py-3 border-b border-border-light last:border-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="w-3.5 h-3.5 text-accent" />
+                          <span className="text-xs font-medium text-text-primary">{notif.title}</span>
+                          <span className="text-[10px] text-text-tertiary ml-auto">
+                            {new Date(notif.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
+                        <div className="text-xs text-text-secondary whitespace-pre-wrap bg-bg-secondary rounded-lg p-3 max-h-40 overflow-y-auto">
+                          {notif.content}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8 text-text-tertiary">
+                      <FileText className="w-6 h-6 mb-2 opacity-40" />
+                      <span className="text-xs">暂无审查结果</span>
                     </div>
                   )
                 )}
