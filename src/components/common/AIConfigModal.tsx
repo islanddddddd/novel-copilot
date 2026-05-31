@@ -69,7 +69,7 @@ export default function AIConfigModal({ isOpen, onClose }: AIConfigModalProps) {
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-base font-medium">AI 配置</h2>
-                <p className="text-xs text-text-tertiary mt-0.5">配置你的 AI 服务提供商</p>
+                <p className="text-xs text-text-tertiary mt-0.5">支持所有兼容 OpenAI 接口协议的服务</p>
               </div>
               <button onClick={onClose} className="p-1.5 hover:bg-bg-secondary rounded-lg transition-colors">
                 <X className="w-4 h-4 text-text-tertiary" />
