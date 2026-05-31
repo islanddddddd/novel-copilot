@@ -84,6 +84,16 @@ const ParagraphBlock = forwardRef<HTMLDivElement, ParagraphProps>(
 
     const showAIBar = !isUserPane && aiOperations.length > 0 && isHovered && paragraph.aiStatus !== 'processing';
     const isProcessing = paragraph.aiStatus === 'processing' && !isUserPane;
+    const [showCompletion, setShowCompletion] = useState(false);
+
+    // Track completion to trigger animation only once
+    useEffect(() => {
+      if (paragraph.aiStatus === 'completed' && !isUserPane && paragraph.aiText) {
+        setShowCompletion(true);
+        const timer = setTimeout(() => setShowCompletion(false), 1500);
+        return () => clearTimeout(timer);
+      }
+    }, [paragraph.aiStatus, paragraph.aiText, isUserPane]);
 
     return (
       <div
@@ -91,7 +101,7 @@ const ParagraphBlock = forwardRef<HTMLDivElement, ParagraphProps>(
         data-paragraph-id={paragraph.id}
         className={`relative group transition-all duration-150 ${
           isSelected ? 'bg-accent/15' : ''
-        } ${isProcessing ? 'ai-processing-glow' : ''}`}
+        }`}
         style={{ minHeight: 0 }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -120,49 +130,82 @@ const ParagraphBlock = forwardRef<HTMLDivElement, ParagraphProps>(
           transition={isProcessing ? { repeat: Infinity, duration: 1.2, ease: 'easeInOut' } : { duration: 0.2 }}
         />
 
-        {/* Processing shimmer overlay */}
+        {/* Processing charging effect */}
         <AnimatePresence>
           {isProcessing && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: 'linear-gradient(90deg, transparent 0%, rgba(212,165,116,0.04) 50%, transparent 100%)',
-                backgroundSize: '200% 100%',
-              }}
+              transition={{ duration: 0.3 }}
+              className="absolute inset-0 pointer-events-none overflow-hidden"
             >
+              {/* Background fill */}
               <motion.div
-                className="absolute inset-0"
+                className="absolute left-0 top-0 bottom-0 w-full"
                 style={{
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(212,165,116,0.06) 50%, transparent 100%)',
-                  backgroundSize: '200% 100%',
+                  background: 'linear-gradient(90deg, rgba(212,165,116,0.2) 0%, rgba(212,165,116,0.1) 60%, rgba(212,165,116,0.03) 100%)',
                 }}
-                animate={{ backgroundPosition: ['200% 0%', '-200% 0%'] }}
-                transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                animate={{
+                  opacity: [0, 1, 1, 0, 0],
+                  scaleX: [0, 0, 1, 1, 0],
+                  transformOrigin: 'left',
+                }}
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  times: [0, 0.01, 0.7, 0.85, 1],
+                  ease: 'easeInOut',
+                }}
+              />
+              {/* Leading edge glow */}
+              <motion.div
+                className="absolute top-0 bottom-0 w-8"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(212,165,116,0.35), transparent)',
+                  filter: 'blur(4px)',
+                }}
+                animate={{
+                  left: ['-5%', '95%'],
+                  opacity: [0, 0, 1, 1, 0],
+                }}
+                transition={{
+                  duration: 5,
+                  repeat: Infinity,
+                  times: [0, 0.01, 0.1, 0.7, 0.85],
+                  ease: 'easeInOut',
+                }}
               />
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Processing badge */}
+        {/* Completion effect */}
         <AnimatePresence>
-          {isProcessing && (
+          {showCompletion && (
             <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.25 }}
-              className="ai-processing-badge flex items-center gap-2 px-3 py-1.5 mx-4 ml-[34px] mt-1 rounded-lg bg-processing/10 border border-processing/20 pointer-events-none z-10 relative"
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 0 }}
+              transition={{ duration: 1.5, ease: 'easeOut' }}
+              className="absolute inset-0 pointer-events-none overflow-hidden"
             >
-              <div className="dot-loader">
-                <span />
-                <span />
-                <span />
-              </div>
-              <span className="text-xs font-medium text-processing">AI 正在处理...</span>
+              {/* Green sweep from left to right */}
+              <motion.div
+                className="absolute top-0 bottom-0 w-full"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(107,142,107,0.15), transparent)',
+                }}
+                initial={{ x: '-100%' }}
+                animate={{ x: '100%' }}
+                transition={{ duration: 0.8, ease: 'easeOut' }}
+              />
+              {/* Brief green border flash */}
+              <motion.div
+                className="absolute inset-0 border-2 border-success/30 rounded"
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 0 }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+              />
             </motion.div>
           )}
         </AnimatePresence>

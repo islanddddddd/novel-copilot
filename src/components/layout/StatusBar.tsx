@@ -24,7 +24,7 @@ export default function StatusBar() {
         id: p.id,
         text: p.userText.slice(0, 40) + (p.userText.length > 40 ? '...' : ''),
         mode: p.aiMode,
-        configName: p.aiConfigName,
+        operation: p.aiOperation,
       }));
     const completedCount = currentChapter.paragraphs.filter((p) => p.aiStatus === 'completed' && p.aiText).length;
     return { totalChars, chineseChars, punctuationMarks, paragraphCount: currentChapter.paragraphs.length, processingItems, completedCount };
@@ -57,6 +57,14 @@ export default function StatusBar() {
     if (mode === 'high') return '高质量';
     if (mode === 'fast') return '快速';
     return '均衡';
+  };
+
+  const operationLabel = (op?: string) => {
+    if (op === 'polish') return '润色';
+    if (op === 'expand') return '扩写';
+    if (op === 'review') return '审查';
+    if (op === 'custom') return '自定义';
+    return '处理';
   };
 
   return (
@@ -244,7 +252,7 @@ export default function StatusBar() {
                         <div className="flex-1 min-w-0">
                           <p className="text-xs text-text-primary truncate">{item.text}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] text-text-tertiary">{item.configName || '未命名配置'}</span>
+                            <span className="text-[10px] font-medium text-text-secondary">{operationLabel(item.operation)}</span>
                             <span className="text-[10px] text-border">|</span>
                             <span className={`text-[10px] font-medium ${modeColor(item.mode)}`}>{modeLabel(item.mode)}</span>
                           </div>
