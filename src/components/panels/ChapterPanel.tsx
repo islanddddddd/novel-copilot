@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Plus,
@@ -9,17 +9,20 @@ import {
   Edit3,
 } from 'lucide-react';
 import { useNovelStore } from '../../store/useNovelStore';
+import { readFileContent, parseImportContent, exportNovel } from '../../lib/export-utils';
 
 interface ChapterPanelProps {
   onCreateChapter: () => void;
 }
 
 export default function ChapterPanel({ onCreateChapter }: ChapterPanelProps) {
-  const { novels, currentNovelId, currentChapterId, setCurrentChapter, deleteChapter, updateChapter } =
+  const { novels, currentNovelId, currentChapterId, setCurrentChapter, deleteChapter, updateChapter, addChapter } =
     useNovelStore();
   const [editingChapter, setEditingChapter] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentNovel = novels.find((n) => n.id === currentNovelId);
   const chapters = currentNovel?.chapters || [];
@@ -37,6 +40,50 @@ export default function ChapterPanel({ onCreateChapter }: ChapterPanelProps) {
       deleteChapter(currentNovelId!, chapterId);
     }
     setMenuOpen(null);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !currentNovelId) return;
+
+    const novel = novels.find((n) => n.id === currentNovelId);
+    if (!novel) return;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const content = await readFileContent(file);
+      const paragraphs = parseImportContent(content);
+      const chapterIndex = novel.chapters.length + i;
+      const fileName = file.name.replace(/\.(txt|md)$/i, '');
+
+      const newChapter = {
+        id: `ch-${Date.now()}-${i}`,
+        title: fileName || `第${chapterIndex + 1}章`,
+        order: chapterIndex,
+        paragraphs: paragraphs.map((text, idx) => ({
+          id: `p-${Date.now()}-${i}-${idx}`,
+          userText: text,
+          aiStatus: 'idle' as const,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        })),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      addChapter(currentNovelId, newChapter);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleExport = (mode: 'split' | 'merged', format: 'txt' | 'md') => {
+    if (!currentNovel) return;
+    exportNovel(currentNovel, mode, format);
+    setShowExportMenu(false);
   };
 
   return (
@@ -137,8 +184,8 @@ export default function ChapterPanel({ onCreateChapter }: ChapterPanelProps) {
         )}
       </div>
 
-      {/* Add Chapter Button */}
-      <div className="p-3 border-t border-border">
+      {/* Bottom Actions */}
+      <div className="p-3 border-t border-border space-y-2">
         <button
           onClick={onCreateChapter}
           className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-bg-tertiary hover:bg-border-light text-text-secondary hover:text-text-primary text-sm font-medium transition-colors"
@@ -146,6 +193,71 @@ export default function ChapterPanel({ onCreateChapter }: ChapterPanelProps) {
           <Plus className="w-4 h-4" />
           新建章节
         </button>
+
+        <div className="flex gap-2">
+          {/* Import Button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 px-3 py-2 rounded-lg bg-bg-tertiary hover:bg-border-light text-text-secondary hover:text-text-primary text-sm transition-colors"
+          >
+            导入
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".txt,.md"
+            multiple
+            onChange={handleImport}
+            className="hidden"
+          />
+
+          {/* Export Button */}
+          <div className="relative flex-1">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="w-full px-3 py-2 rounded-lg bg-bg-tertiary hover:bg-border-light text-text-secondary hover:text-text-primary text-sm transition-colors"
+            >
+              导出
+            </button>
+
+            {showExportMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute bottom-full left-0 right-0 mb-1 bg-surface rounded-lg shadow-lg border border-border py-1 z-50"
+                >
+                  <button
+                    onClick={() => handleExport('split', 'txt')}
+                    className="w-full text-left px-3 py-1.5 text-sm hover:bg-bg-secondary"
+                  >
+                    分章导出 TXT（压缩包）
+                  </button>
+                  <button
+                    onClick={() => handleExport('split', 'md')}
+                    className="w-full text-left px-3 py-1.5 text-sm hover:bg-bg-secondary"
+                  >
+                    分章导出 Markdown（压缩包）
+                  </button>
+                  <div className="border-t border-border-light my-1" />
+                  <button
+                    onClick={() => handleExport('merged', 'txt')}
+                    className="w-full text-left px-3 py-1.5 text-sm hover:bg-bg-secondary"
+                  >
+                    合并导出 TXT
+                  </button>
+                  <button
+                    onClick={() => handleExport('merged', 'md')}
+                    className="w-full text-left px-3 py-1.5 text-sm hover:bg-bg-secondary"
+                  >
+                    合并导出 Markdown
+                  </button>
+                </motion.div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
